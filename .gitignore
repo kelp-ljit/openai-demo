@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# npm
+node_modules/
+package-lock.json
+
+# VS Code
+.vscode
+
+# JetBrains
+.idea/
+
+# build
+public/
