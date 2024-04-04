@@ -56,6 +56,7 @@ async function createAssistant({ userProfile = config.USER_PROFILE, model = 'gpt
 		`,
 		tools: [
 			{ type: 'code_interpreter' },
+			{ type: 'retrieval' },
 			{
 				type: 'function',
 				function: {
