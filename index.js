@@ -44,7 +44,7 @@ function log(data) {
 	console.log(util.inspect(data, { colors: true, showHidden: false, depth: null }));
 }
 
-async function createAssistant({ userProfile = config.USER_PROFILE, model = 'gpt-4-1106-preview' }) {
+async function createAssistant({ userProfile = config.USER_PROFILE, model = 'gpt-4-turbo-preview' }) {
 	return openai.beta.assistants.create({
 		model,
 		name: '智能客服',
