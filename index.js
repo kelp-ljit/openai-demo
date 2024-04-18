@@ -159,6 +159,7 @@ async function runTestCase() {
 
 	for(;;) {
 		const userMessage = userMessages.shift();
+		const toolCallRecords = [];
 
 		if (!userMessage) {
 			break;
@@ -175,11 +176,18 @@ async function runTestCase() {
 				assistant_id: assistantId,
 			},
 		);
-		run = await retrieveRunUntilFinish(thread.id, run.id);
+		run = await retrieveRunUntilFinish({
+			threadId: thread.id,
+			runId: run.id,
+			executeTool: ({toolCalls}) => {
+				toolCallRecords.push(...toolCalls.map(toolCall => `${toolCall.function.name}(${toolCall.function.arguments})`));
+			},
+		});
 
 		resultItems.push({
 			threadId: thread.id,
 			runId: run.id,
+			toolCallRecords,
 			usage: run.usage,
 			userMessage,
 			assistantMessages: [],
@@ -249,6 +257,7 @@ async function test({path = 'output.xlsx', times = 10} = {}) {
 						{
 							threadId: testResult[promptIndex].threadId,
 							runId: testResult[promptIndex].runId,
+							toolCalls: testResult[promptIndex].toolCallRecords,
 							...testResult[promptIndex].usage,
 						},
 						null,
@@ -308,7 +317,10 @@ async function start({ model = 'gpt-4-turbo-preview' } = {}) {
 				// temperature: 0.1,
 			},
 		);
-		run = await retrieveRunUntilFinish(thread.id, run.id);
+		run = await retrieveRunUntilFinish({
+			threadId: thread.id,
+			runId: run.id,
+		});
 
 		delete run.instructions;
 		utils.log(run);
