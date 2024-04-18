@@ -41,10 +41,6 @@ program
 	.description('Start chat');
 program.parse(process.argv);
 
-function log(data) {
-	console.log(util.inspect(data, { colors: true, showHidden: false, depth: null }));
-}
-
 /**
  * List assistants.
  * @returns {Promise<void>}
@@ -55,7 +51,7 @@ async function listAssistants() {
 		order: 'desc',
 	});
 
-	log(response.data);
+	utils.log(response.data);
 }
 
 /**
@@ -66,7 +62,7 @@ async function listAssistants() {
 async function deleteAssistant(id) {
 	const result = await openai.beta.assistants.del(id);
 
-	log(result);
+	utils.log(result);
 }
 
 /**
@@ -76,7 +72,7 @@ async function deleteAssistant(id) {
 async function listModels() {
 	const response = await openai.models.list();
 
-	log(response.data);
+	utils.log(response.data);
 }
 
 /**
@@ -89,7 +85,7 @@ async function listFiles() {
 		order: 'desc',
 	});
 
-	log(response.data);
+	utils.log(response.data);
 }
 
 /**
@@ -100,7 +96,7 @@ async function listFiles() {
 async function deleteFile(id) {
 	const result = await openai.files.del(id);
 
-	log(result);
+	utils.log(result);
 }
 
 /**
@@ -114,7 +110,7 @@ async function createFile(path) {
 		purpose: 'assistants',
 	});
 
-	log(file);
+	utils.log(file);
 }
 
 /**
@@ -160,12 +156,12 @@ async function start({ model = 'gpt-4-turbo-preview' } = {}) {
 		run = await retrieveRunUntilFinish(thread.id, run.id);
 
 		delete run.instructions;
-		log(run);
+		utils.log(run);
 		const response = await openai.beta.threads.messages.list(
 			run.thread_id,
 			{ order: 'asc' },
 		);
-		log(response.data);
+		utils.log(response.data);
 
 		console.log(`duration: ${`${(Date.now() - start)}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}ms`);
 	});
