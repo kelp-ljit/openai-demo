@@ -163,6 +163,7 @@ async function runTestCase() {
 		run = await retrieveRunUntilFinish(thread.id, run.id);
 
 		resultItems.push({
+			threadId: thread.id,
 			runId: run.id,
 			usage: run.usage,
 			userMessage,
@@ -229,7 +230,15 @@ async function test({path = 'output.xlsx', times = 10} = {}) {
 						? testResult[promptIndex].quotes.join('\n')
 						: '-';
 				} else if (isUsageRow) {
-					result[`completion${testIndex}`] = JSON.stringify(testResult[promptIndex].usage, null, 2);
+					result[`completion${testIndex}`] = JSON.stringify(
+						{
+							threadId: testResult[promptIndex].threadId,
+							runId: testResult[promptIndex].runId,
+							...testResult[promptIndex].usage,
+						},
+						null,
+						2,
+					);
 				}
 			});
 
