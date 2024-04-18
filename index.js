@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { program } = require('commander');
+const ExcelJS = require('exceljs');
 const readline = require('readline');
 const utils = require('./lib/utils');
 const {
@@ -26,6 +27,9 @@ program
 	
 	-------- Run -----------
 	node . start {gpt-4-turbo-preview}
+
+	-------- Test -----------
+	node . test {output.xlsx}
 	`);
 program
 	.command('as')
@@ -39,6 +43,9 @@ program
 program
 	.command('start')
 	.description('Start chat');
+program
+	.command('test')
+	.description('Start test');
 program.parse(process.argv);
 
 /**
@@ -117,6 +124,124 @@ async function createFile(path) {
 	});
 
 	utils.log(file);
+}
+
+async function runTestCase() {
+	const resultItems = [];
+	const openai = utils.getOpenAI();
+	const userMessages = [
+		'充值没到',
+		'mycard 90',
+	];
+	let run;
+
+	const assistant = await createAssistant({
+		instructions: `你是一位客服。檔案為客服手冊，編碼為 UTF-8，讀取客服手冊並依據客服手冊內容回覆使用者。
+	}`,
+	});
+	const assistantId = assistant.id;
+	const thread = await openai.beta.threads.create();
+
+	for(;;) {
+		const userMessage = userMessages.shift();
+
+		if (!userMessage) {
+			break;
+		}
+
+		utils.log(userMessage);
+		await openai.beta.threads.messages.create(
+			thread.id,
+			{role: 'user', content: userMessage},
+		);
+		run = await openai.beta.threads.runs.create(
+			thread.id,
+			{
+				assistant_id: assistantId,
+			},
+		);
+		run = await retrieveRunUntilFinish(thread.id, run.id);
+
+		resultItems.push({
+			runId: run.id,
+			usage: run.usage,
+			userMessage,
+			assistantMessages: [],
+			quotes: [],
+		});
+	}
+
+	const messages = await openai.beta.threads.messages.list(
+		thread.id,
+		{ order: 'asc' },
+	);
+
+	messages.data
+		.filter(message => message.role === 'assistant')
+		.forEach((message, index) => {
+			resultItems[index].assistantMessages = message.content
+				.map(content => content.text?.value)
+				.filter(value => value);
+			resultItems[index].quotes = message.content
+				.map(content => content.text?.annotations[0]?.file_citation.quote)
+				.filter(quote => quote);
+		});
+
+	return resultItems;
+}
+
+/**
+ * Run test.
+ * @param {string} path
+ * @returns {Promise<void>}
+ */
+async function test({path = 'output.xlsx', times = 10} = {}) {
+	const testsResult = await Promise.all(
+		Array.from(new Array(times))
+			.map(runTestCase),
+	);
+
+	const workbook = new ExcelJS.Workbook();
+	const worksheet = workbook.addWorksheet('對話');
+
+	worksheet.columns = [
+		{header: '問題', key: 'prompt'},
+		...(Array.from(new Array(times)).map((_, testIndex) => ({
+			header: `回應 ${testIndex + 1}`,
+			key: `completion${testIndex}`,
+		}))),
+	];
+	const rows = Array.from(new Array(testsResult[0].length * 3))
+		.map((_, index) => {
+			const promptIndex = Math.floor(index / 3);
+			const isCompletionRow = index % 3 === 0;
+			const isQuoteRow = index % 3 === 1;
+			const isUsageRow = index % 3 === 2;
+			const result = {
+				prompt: testsResult[0][promptIndex].userMessage,
+			};
+
+			testsResult.forEach((testResult, testIndex) => {
+				if (isCompletionRow) {
+					result[`completion${testIndex}`] = testResult[promptIndex].assistantMessages.join('\n');
+				} else if (isQuoteRow) {
+					result[`completion${testIndex}`] = testResult[promptIndex].quotes.length
+						? testResult[promptIndex].quotes.join('\n')
+						: '-';
+				} else if (isUsageRow) {
+					result[`completion${testIndex}`] = JSON.stringify(testResult[promptIndex].usage, null, 2);
+				}
+			});
+
+			return result;
+		});
+
+	worksheet.addRows(rows);
+	testsResult[0].forEach((_, promptIndex) => {
+		worksheet.mergeCells(`A${promptIndex * 3 + 2}:A${promptIndex * 3 + 4}`);
+	});
+
+	await workbook.xlsx.writeFile(path);
 }
 
 /**
@@ -214,6 +339,10 @@ async function execute() {
 
 	if (args[0] === 'start') {
 		return start(args[1]);
+	}
+
+	if (args[0] === 'test') {
+		return test({path: args[1]});
 	}
 }
 
