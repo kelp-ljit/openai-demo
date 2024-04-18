@@ -1,5 +1,4 @@
 const fs = require('fs');
-const util = require('util');
 const { program } = require('commander');
 const readline = require('readline');
 const utils = require('./lib/utils');
@@ -14,6 +13,7 @@ program
 	.usage(`
 	-------- Assistant -------------
 	node . as ls
+	node . as get <id>
 	node . as del <id>
 	
 	-------- Model -------------
@@ -52,6 +52,12 @@ async function listAssistants() {
 	});
 
 	utils.log(response.data);
+}
+
+async function getAssistant(id) {
+	const assistant = await openai.beta.assistants.retrieve(id);
+
+	utils.log(assistant);
 }
 
 /**
@@ -175,6 +181,10 @@ async function execute() {
 	if (args[0] === 'as') {
 		if (args[1] === 'ls') {
 			return listAssistants();
+		}
+
+		if (args[1] === 'get') {
+			return getAssistant(args[2]);
 		}
 
 		if (['del', 'delete'].includes(args[1])) {
