@@ -25,6 +25,9 @@ program
 	node . file create <path>
 	node . file del <id>
 	
+	-------- Message -------------
+	node . ms ls <threadId>
+	
 	-------- Run -----------
 	node . start {gpt-4-turbo-preview}
 
@@ -34,6 +37,9 @@ program
 program
 	.command('as')
 	.description('Assistant commands');
+program
+	.command('ms')
+	.description('Message commands');
 program
 	.command('model')
 	.description('Model commands');
@@ -76,6 +82,15 @@ async function deleteAssistant(id) {
 	const result = await openai.beta.assistants.del(id);
 
 	utils.log(result);
+}
+
+async function listMessages(threadId) {
+	const response = await openai.beta.threads.messages.list(
+		threadId,
+		{ order: 'asc' },
+	);
+
+	utils.log(response.data);
 }
 
 /**
@@ -323,6 +338,12 @@ async function execute() {
 
 		if (['del', 'delete'].includes(args[1])) {
 			return deleteAssistant(args[2]);
+		}
+	}
+
+	if (args[0] === 'ms') {
+		if (args[1] === 'ls') {
+			return listMessages(args[2]);
 		}
 	}
 
