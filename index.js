@@ -199,9 +199,21 @@ async function runTestCase() {
 		thread.id,
 		{ order: 'asc' },
 	);
+	const cleanedMessages = [];
 
-	messages.data
-		.filter(message => message.role === 'assistant')
+	messages.data.reduce((a, b) => {
+		if (b.role === 'assistant') {
+			if (a.role === 'assistant') {
+				cleanedMessages[cleanedMessages.length - 1].content.push(...b.content);
+			} else {
+				cleanedMessages.push(b);
+			}
+		}
+
+		return b;
+	});
+
+	cleanedMessages
 		.forEach((message, index) => {
 			resultItems[index].assistantMessages = message.content
 				.map(content => content.text?.value)
