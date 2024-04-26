@@ -151,8 +151,10 @@ async function runTestCase() {
 	let run;
 
 	const assistant = await createAssistant({
-		instructions: `你是一位客服。檔案為客服手冊，編碼為 UTF-8，讀取客服手冊並依據客服手冊內容回覆使用者。
-	}`,
+		model: 'gpt-3.5-turbo',
+		fileIds: [
+		],
+		instructions: `你是一位客服，需要回覆使用者提出的問題。`,
 	});
 	const assistantId = assistant.id;
 	const thread = await openai.beta.threads.create();
@@ -294,7 +296,7 @@ async function test({path = 'output.xlsx', times = 10} = {}) {
  * @param {string} model - gpt-3.5-turbo | gpt-4 | gpt-4-1106-preview | gpt-4-turbo-preview
  * @returns {Promise<void>}
  */
-async function start({ model = 'gpt-4-turbo-preview' } = {}) {
+async function start({ model = 'gpt-3.5-turbo-1106' } = {}) {
 	const userInterface = readline.createInterface({
 		input: process.stdin,
 		output: process.stdout,
