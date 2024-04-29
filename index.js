@@ -1,6 +1,7 @@
 const fs = require('fs');
 const { program } = require('commander');
 const ExcelJS = require('exceljs');
+const pLimit = require('p-limit');
 const readline = require('readline');
 const utils = require('./lib/utils');
 const {
@@ -148,20 +149,35 @@ async function createFile(path) {
 	utils.log(file);
 }
 
-async function runTestCase() {
+/**
+ * @param {{
+ * 	messages: Array<string>,
+ * 	model,
+ * 	instructions,
+ * 	fileIds
+ * }} args
+ * @returns {Promise<[
+ * 	{
+ * 		threadId,
+ * 		runId,
+ * 		toolCallRecords,
+ * 		usage: {prompt_tokens: number, completion_tokens: number, total_tokens: number},
+ * 		userMessage,
+ * 		assistantMessages: [string],
+ * 		quotes: [string]
+ * 	}]>}
+ */
+async function runTestCase(args) {
 	const resultItems = [];
 	const openai = utils.getOpenAI();
-	const userMessages = [
-		'充值没到',
-		'mycard 90',
-	];
+	const userMessages = args.messages;
 	let run;
 
 	const assistant = await createAssistant({
 		model: 'gpt-3.5-turbo',
-		fileIds: [
-		],
-		instructions: `你是一位客服，需要回覆使用者提出的問題。`,
+		model: args.model,
+		fileIds: args.fileIds,
+		instructions: args.instructions,
 	});
 	const assistantId = assistant.id;
 	const thread = await openai.beta.threads.create();
@@ -241,13 +257,22 @@ async function runTestCase() {
  * @returns {Promise<void>}
  */
 async function test({path = 'output.xlsx', times = 10} = {}) {
+	const limit = pLimit(4);
+	const workbook = new ExcelJS.Workbook();
+	const worksheet = workbook.addWorksheet('GPT4-忘記密碼(file_search)');
 	const testsResult = await Promise.all(
 		Array.from(new Array(times))
-			.map(runTestCase),
+			.map(() => limit(() => runTestCase({
+				// model: 'gpt-3.5-turbo',
+				model: 'gpt-4-turbo-preview',
+				messages: [
+					'我忘记密码了',
+				],
+				instructions: `你是一位客服，需要回覆使用者提出的問題。`,
+				fileIds: [
+				],
+			}))),
 	);
-
-	const workbook = new ExcelJS.Workbook();
-	const worksheet = workbook.addWorksheet('對話');
 
 	worksheet.columns = [
 		{header: '問題', key: 'prompt'},
