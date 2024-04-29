@@ -22,6 +22,7 @@ program
 	
 	-------- File -------------
 	node . file ls
+	node . file get <id>
 	node . file create <path>
 	node . file del <id>
 	
@@ -114,6 +115,12 @@ async function listFiles() {
 	});
 
 	utils.log(response.data);
+}
+
+async function getFile(id) {
+	const file = await openai.files.retrieve(id);
+
+	utils.log(file);
 }
 
 /**
@@ -382,6 +389,10 @@ async function execute() {
 	if (args[0] === 'file') {
 		if (args[1] === 'ls') {
 			return listFiles();
+		}
+
+		if (args[1] === 'get') {
+			return getFile(args[2]);
 		}
 
 		if (args[1] === 'create') {
