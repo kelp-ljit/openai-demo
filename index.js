@@ -222,6 +222,7 @@ async function runTestCase(args) {
 		});
 
 		resultItems.push({
+			assistantId,
 			threadId: thread.id,
 			runId: run.id,
 			toolCallRecords,
@@ -313,6 +314,7 @@ async function test({path = 'output.xlsx', times = 10} = {}) {
 				} else if (isUsageRow) {
 					result[`completion${testIndex}`] = JSON.stringify(
 						{
+							assistantId: testResult[promptIndex].assistantId,
 							threadId: testResult[promptIndex].threadId,
 							runId: testResult[promptIndex].runId,
 							toolCalls: testResult[promptIndex].toolCallRecords,
