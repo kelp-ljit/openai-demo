@@ -193,7 +193,6 @@ async function runTestCase(args) {
 	let run;
 
 	const assistant = await createAssistant({
-		model: 'gpt-3.5-turbo',
 		model: args.model,
 		fileIds: args.fileIds,
 		instructions: args.instructions,
