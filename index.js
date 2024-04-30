@@ -277,7 +277,7 @@ async function runTestCase(args) {
  * @returns {Promise<void>}
  */
 async function test({path = 'output.xlsx', times = 10} = {}) {
-	const limit = pLimit(4);
+	const limit = pLimit(5);
 	const workbook = new ExcelJS.Workbook();
 	const worksheet = workbook.addWorksheet('GPT4-忘記密碼(file_search)');
 	const testsResult = await Promise.all(
