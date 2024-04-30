@@ -27,6 +27,9 @@ program
 	node . file create <path>
 	node . file del <id>
 	
+	-------- Vector store -------------
+	node . vs get <id>
+
 	-------- Message -------------
 	node . ms ls <threadId>
 	
@@ -39,6 +42,9 @@ program
 program
 	.command('as')
 	.description('Assistant commands');
+program
+	.command('vs')
+	.description('Vector store commands');
 program
 	.command('ms')
 	.description('Message commands');
@@ -84,6 +90,12 @@ async function deleteAssistant(id) {
 	const result = await openai.beta.assistants.del(id);
 
 	utils.log(result);
+}
+
+async function getVectorStore(id) {
+	const vectorStore = await openai.beta.vectorStores.retrieve(id);
+
+	utils.log(vectorStore);
 }
 
 async function listMessages(threadId) {
@@ -402,6 +414,12 @@ async function execute() {
 	if (args[0] === 'ms') {
 		if (args[1] === 'ls') {
 			return listMessages(args[2]);
+		}
+	}
+
+	if (args[0] === 'vs') {
+		if (args[1] === 'get') {
+			return getVectorStore(args[2]);
 		}
 	}
 
