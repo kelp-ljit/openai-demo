@@ -29,6 +29,7 @@ program
 	
 	-------- Vector store -------------
 	node . vs get <id>
+	node . vs files <id>
 
 	-------- Message -------------
 	node . ms ls <threadId>
@@ -96,6 +97,12 @@ async function getVectorStore(id) {
 	const vectorStore = await openai.beta.vectorStores.retrieve(id);
 
 	utils.log(vectorStore);
+}
+
+async function getVectorStoreFiles(id) {
+	const files = await openai.beta.vectorStores.files.list(id);
+
+	utils.log(files.data);
 }
 
 async function listMessages(threadId) {
@@ -422,6 +429,10 @@ async function execute() {
 	if (args[0] === 'vs') {
 		if (args[1] === 'get') {
 			return getVectorStore(args[2]);
+		}
+
+		if (args[1] === 'files') {
+			return getVectorStoreFiles(args[2]);
 		}
 	}
 
