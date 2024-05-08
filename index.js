@@ -28,6 +28,7 @@ program
 	node . file del <id>
 	
 	-------- Vector store -------------
+	node . vs ls
 	node . vs get <id>
 	node . vs files <id>
 
@@ -91,6 +92,12 @@ async function deleteAssistant(id) {
 	const result = await openai.beta.assistants.del(id);
 
 	utils.log(result);
+}
+
+async function listVectorStores() {
+	const vectorStores = await openai.beta.vectorStores.list();
+
+	utils.log(vectorStores.data);
 }
 
 async function getVectorStore(id) {
@@ -426,6 +433,10 @@ async function execute() {
 	}
 
 	if (args[0] === 'vs') {
+		if (args[1] === 'ls') {
+			return listVectorStores();
+		}
+
 		if (args[1] === 'get') {
 			return getVectorStore(args[2]);
 		}
