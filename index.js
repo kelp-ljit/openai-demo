@@ -36,6 +36,7 @@ program
 	node . ms ls <threadId>
 	
 	-------- Run -----------
+	node . run get <threadId> <runId>
 	node . start {gpt-4-turbo-preview}
 
 	-------- Test -----------
@@ -56,6 +57,9 @@ program
 program
 	.command('file')
 	.description('File commands');
+program
+	.command('run')
+	.description('Run commands');
 program
 	.command('start')
 	.description('Start chat');
@@ -350,6 +354,12 @@ async function test({path = 'output.xlsx', times = 10} = {}) {
 	await workbook.xlsx.writeFile(path);
 }
 
+async function getRun({threadId, runId}) {
+	const run = await openai.beta.threads.runs.retrieve(threadId, runId);
+
+	utils.log(run);
+}
+
 /**
  * Start chat.
  * @param {string} model - gpt-3.5-turbo | gpt-4 | gpt-4-1106-preview | gpt-4-turbo-preview
@@ -467,6 +477,12 @@ async function execute() {
 
 		if (['del', 'delete'].includes(args[1])) {
 			return deleteFile(args[2]);
+		}
+	}
+
+	if (args[0] === 'run') {
+		if (args[1] === 'get') {
+			return getRun({threadId: args[2], runId: args[3]});
 		}
 	}
 
