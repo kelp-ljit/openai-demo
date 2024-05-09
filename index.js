@@ -314,7 +314,6 @@ async function test({path = 'output.xlsx', times = 10} = {}) {
 	const workbook = new ExcelJS.Workbook();
 	const worksheet = workbook.addWorksheet('GPT3.5-忘記密碼 (lang-chain)');
 	const loader = new TextLoader('./20240422-data-text-clean.txt');
-	const start = new Date();
 	const docs = await loader.loadAndSplit();
 	const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
 	const testsResult = await Promise.all(
