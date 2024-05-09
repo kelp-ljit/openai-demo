@@ -3,6 +3,12 @@ const { program } = require('commander');
 const ExcelJS = require('exceljs');
 const pLimit = require('p-limit');
 const readline = require('readline');
+const {
+	TextLoader,
+} = require('langchain/document_loaders/fs/text');
+const {
+	MemoryVectorStore,
+} = require('langchain/vectorstores/memory');
 const utils = require('./lib/utils');
 const {
 	createAssistant,
@@ -185,6 +191,7 @@ async function createFile(path) {
  * 	model,
  * 	instructions,
  * 	fileIds
+ * 	memoryVectorStore
  * }} args
  * @returns {Promise<[
  * 	{
@@ -210,13 +217,25 @@ async function runTestCase(args) {
 	});
 	const assistantId = assistant.id;
 	const thread = await openai.beta.threads.create();
+	const similaritySearchQueries = [];
 
 	for(;;) {
 		const userMessage = userMessages.shift();
 		const toolCallRecords = [];
+		let relevantDocs;
 
 		if (!userMessage) {
 			break;
+		}
+
+		if (args.memoryVectorStore) {
+			similaritySearchQueries.unshift(userMessage);
+			if (similaritySearchQueries.length > 3) {
+				similaritySearchQueries.pop();
+			}
+
+			const start = new Date();
+			relevantDocs = await args.memoryVectorStore.similaritySearch(similaritySearchQueries.join('\n'));
 		}
 
 		utils.log(userMessage);
@@ -228,6 +247,9 @@ async function runTestCase(args) {
 			thread.id,
 			{
 				assistant_id: assistantId,
+				additional_instructions: relevantDocs
+					? `\n請依據底下內容回覆用戶：\n${relevantDocs.map(doc => doc.pageContent).join('\n')}`
+					: undefined,
 			},
 		);
 		run = await retrieveRunUntilFinish({
@@ -288,13 +310,19 @@ async function runTestCase(args) {
  */
 async function test({path = 'output.xlsx', times = 10} = {}) {
 	const limit = pLimit(5);
+	const embeddings = utils.getEmbeddings();
 	const workbook = new ExcelJS.Workbook();
-	const worksheet = workbook.addWorksheet('GPT4-忘記密碼(file_search)');
+	const worksheet = workbook.addWorksheet('GPT3.5-忘記密碼 (lang-chain)');
+	const loader = new TextLoader('./20240422-data-text-clean.txt');
+	const start = new Date();
+	const docs = await loader.loadAndSplit();
+	const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
 	const testsResult = await Promise.all(
 		Array.from(new Array(times))
 			.map(() => limit(() => runTestCase({
-				// model: 'gpt-3.5-turbo',
-				model: 'gpt-4-turbo-preview',
+				model: 'gpt-3.5-turbo',
+				// model: 'gpt-4-turbo-preview',
+				memoryVectorStore: vectorStore,
 				messages: [
 					'我忘记密码了',
 				],
