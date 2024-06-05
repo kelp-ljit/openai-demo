@@ -244,7 +244,19 @@ async function runTestCase(args) {
 		utils.log(userMessage);
 		await openai.beta.threads.messages.create(
 			thread.id,
-			{role: 'user', content: userMessage},
+			{
+				role: 'user',
+				content: [
+					{type: 'text', text: userMessage},
+					// {type: 'image_file', image_file: {file_id: 'file-'}},
+				],
+				// attachments: [
+				// 	{
+				// 		file_id: 'file-',
+				// 		tools: [{type: 'code_interpreter'}],
+				// 	},
+				// ],
+			},
 		);
 		run = await openai.beta.threads.runs.create(
 			thread.id,
@@ -315,15 +327,19 @@ async function test({path = 'output.xlsx', times = 10} = {}) {
 	const limit = pLimit(5);
 	const embeddings = utils.getEmbeddings();
 	const workbook = new ExcelJS.Workbook();
-	const worksheet = workbook.addWorksheet('GPT3.5-忘記密碼 (lang-chain)');
-	const loader = new TextLoader('./20240422-data-text-clean.txt');
+	const worksheet = workbook.addWorksheet('GPT4o-SMA');
+	// const loader = new TextLoader('./20240422-data-text-clean.txt');
+	const blob = new Blob(['']);
+	const loader = new TextLoader(blob);
 	const docs = await loader.loadAndSplit();
 	const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
+
 	const testsResult = await Promise.all(
 		Array.from(new Array(times))
 			.map(() => limit(() => runTestCase({
-				model: 'gpt-3.5-turbo',
+				// model: 'gpt-3.5-turbo',
 				// model: 'gpt-4-turbo-preview',
+				model: 'gpt-4o',
 				memoryVectorStore: vectorStore,
 				messages: [
 					'我忘记密码了',
