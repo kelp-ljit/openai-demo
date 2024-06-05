@@ -47,6 +47,9 @@ program
 
 	-------- Test -----------
 	node . test {output.xlsx}
+
+	-------- OCR -----------
+	node . ocr <input.jpg>
 	`);
 program
 	.command('as')
@@ -72,6 +75,9 @@ program
 program
 	.command('test')
 	.description('Start test');
+program
+	.command('ocr')
+	.description('Optical character recognition');
 program.parse(process.argv);
 
 /**
@@ -466,6 +472,18 @@ async function start({ model = 'gpt-3.5-turbo-1106' } = {}) {
 	return new Promise(() => {});
 }
 
+async function ocr({path}) {
+	const { createScheduler, createWorker } = require('tesseract.js');
+	const scheduler = createScheduler();
+	const worker = await createWorker('eng+chi_sim+chi_tra');
+
+	scheduler.addWorker(worker);
+
+	const result = await worker.recognize(path);
+
+	console.log(result.data.text);
+}
+
 async function execute() {
 	const { args } = program;
 
@@ -539,6 +557,10 @@ async function execute() {
 
 	if (args[0] === 'test') {
 		return test({path: args[1]});
+	}
+
+	if (args[0] === 'ocr') {
+		return ocr({path: args[1]});
 	}
 }
 
