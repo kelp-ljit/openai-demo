@@ -80,7 +80,7 @@ program.parse(process.argv);
  */
 async function listAssistants() {
 	const response = await openai.beta.assistants.list({
-		limit: 100,
+		limit: 10,
 		order: 'desc',
 	});
 
@@ -125,7 +125,10 @@ async function getVectorStoreFiles(id) {
 async function listMessages(threadId) {
 	const response = await openai.beta.threads.messages.list(
 		threadId,
-		{ order: 'asc' },
+		{
+			limit: 100,
+			order: 'asc',
+		},
 	);
 
 	utils.log(response.data);
