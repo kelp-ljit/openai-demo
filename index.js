@@ -7,6 +7,9 @@ const {
 	TextLoader,
 } = require('langchain/document_loaders/fs/text');
 const {
+	RecursiveCharacterTextSplitter,
+} = require('langchain/text_splitter');
+const {
 	MemoryVectorStore,
 } = require('langchain/vectorstores/memory');
 const utils = require('./lib/utils');
@@ -337,7 +340,11 @@ async function test({path = 'output.xlsx', times = 10} = {}) {
 	// const loader = new TextLoader('./20240422-data-text-clean.txt');
 	const blob = new Blob(['']);
 	const loader = new TextLoader(blob);
-	const docs = await loader.loadAndSplit();
+	const textSplitter = new RecursiveCharacterTextSplitter({
+		chunkSize: 1000,
+		chunkOverlap: 500, // Default is 200
+	});
+	const docs = await loader.loadAndSplit(textSplitter);
 	const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
 
 	const testsResult = await Promise.all(
