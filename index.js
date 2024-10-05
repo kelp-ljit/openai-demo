@@ -43,6 +43,7 @@ program
 
 	-------- Message -------------
 	node . ms ls <threadId>
+	node . ms del <threadId> <messageId>
 	
 	-------- Run -----------
 	node . run get <threadId> <runId>
@@ -141,6 +142,15 @@ async function listMessages(threadId) {
 	);
 
 	utils.log(response.data);
+}
+
+async function deleteMessage({threadId, messageId}) {
+	const response = await openai.beta.threads.messages.del(
+		threadId,
+		messageId,
+	);
+
+	utils.log(response);
 }
 
 /**
@@ -511,6 +521,13 @@ async function execute() {
 	if (args[0] === 'ms') {
 		if (args[1] === 'ls') {
 			return listMessages(args[2]);
+		}
+
+		if (args[1] === 'del') {
+			return deleteMessage({
+				threadId: args[2],
+				messageId: args[3],
+			});
 		}
 	}
 
