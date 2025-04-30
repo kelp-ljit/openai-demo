@@ -245,6 +245,7 @@ async function runTestCase(args) {
 		const userMessage = userMessages.shift();
 		const toolCallRecords = [];
 		let relevantDocs;
+		let additionalInstructions;
 
 		if (!userMessage) {
 			break;
@@ -257,7 +258,14 @@ async function runTestCase(args) {
 			}
 
 			const start = new Date();
-			relevantDocs = await args.memoryVectorStore.similaritySearch(similaritySearchQueries.join('\n'));
+			relevantDocs = await args.memoryVectorStore.similaritySearch(
+				similaritySearchQueries.join('\n'),
+				8,
+			);
+		}
+
+		if (relevantDocs) {
+			additionalInstructions = `請依據底下內容回覆用戶：\n${relevantDocs.map(doc => doc.pageContent).join('\n---\n')}`;
 		}
 
 		utils.log(userMessage);
@@ -277,22 +285,14 @@ async function runTestCase(args) {
 				// ],
 			},
 		);
-		run = await openai.beta.threads.runs.create(
+
+		run = await openai.beta.threads.runs.createAndPoll(
 			thread.id,
 			{
 				assistant_id: assistantId,
-				additional_instructions: relevantDocs
-					? `\n請依據底下內容回覆用戶：\n${relevantDocs.map(doc => doc.pageContent).join('\n')}`
-					: undefined,
+				additional_instructions: additionalInstructions,
 			},
 		);
-		run = await retrieveRunUntilFinish({
-			threadId: thread.id,
-			runId: run.id,
-			executeTool: ({toolCalls}) => {
-				toolCallRecords.push(...toolCalls.map(toolCall => `${toolCall.function.name}(${toolCall.function.arguments})`));
-			},
-		});
 
 		resultItems.push({
 			assistantId,
@@ -301,6 +301,7 @@ async function runTestCase(args) {
 			toolCallRecords,
 			usage: run.usage,
 			userMessage,
+			additionalInstructions,
 			assistantMessages: [],
 			quotes: [],
 		});
@@ -394,8 +395,8 @@ async function test({path = 'output.xlsx', times = 10} = {}) {
 				if (isCompletionRow) {
 					result[`completion${testIndex}`] = testResult[promptIndex].assistantMessages.join('\n');
 				} else if (isQuoteRow) {
-					result[`completion${testIndex}`] = testResult[promptIndex].quotes.length
-						? testResult[promptIndex].quotes.join('\n')
+					result[`completion${testIndex}`] = testResult[promptIndex].additionalInstructions
+						? testResult[promptIndex].additionalInstructions
 						: '-';
 				} else if (isUsageRow) {
 					result[`completion${testIndex}`] = JSON.stringify(
